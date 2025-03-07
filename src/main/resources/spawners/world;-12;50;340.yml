@@ -1,0 +1,7 @@
+level: 1
+mob: ZOMBIE
+owner: ProGiple
+exp: 256
+storage:
+  1:
+    0: ROTTEN_FLASH;10

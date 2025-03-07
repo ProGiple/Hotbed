@@ -1,0 +1,7 @@
+mobs:
+  zombie:
+    display-name: "Зомби"
+    exp: 1-4
+    lootlist:
+      - rotten_flash;1-5
+      - potato;1

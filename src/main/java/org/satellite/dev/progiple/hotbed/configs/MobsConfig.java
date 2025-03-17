@@ -11,7 +11,6 @@ import java.io.File;
 public class MobsConfig {
     public final Configuration config;
     static {
-        Hotbed.getPlugin().saveResource("mobs.yml", false);
         config = new Configuration(new File(Hotbed.getPlugin().getDataFolder(), "mobs.yml"));
     }
 

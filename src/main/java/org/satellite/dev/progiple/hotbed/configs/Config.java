@@ -1,11 +1,14 @@
 package org.satellite.dev.progiple.hotbed.configs;
 
 import lombok.experimental.UtilityClass;
-import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.novasparkle.lunaspring.Configuration.IConfig;
+import org.novasparkle.lunaspring.Util.Utils;
 import org.satellite.dev.progiple.hotbed.Hotbed;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @UtilityClass
@@ -27,15 +30,47 @@ public class Config {
         }
     }
 
-    public String getMessage(String id) {
-        return messages.get(id);
+    private final Map<CommandSender, Long> timer = new HashMap<>();
+    @SuppressWarnings("deprecation")
+    public void sendMessage(CommandSender sender, String id, String... replacements) {
+        if (timer.containsKey(sender)) {
+            long time = timer.get(sender);
+            if (System.currentTimeMillis() - time < 500) return;
+        }
+
+        String message = messages.get(id);
+        if (message == null || message.isEmpty() || message.startsWith("NONE")) return;
+
+        byte index = 0;
+        for (String replacement : replacements) {
+            message = message.replace("{" + index + "}", replacement);
+            index++;
+        }
+
+        if (message.startsWith("HOTBAR")) {
+            if (sender instanceof Player) {
+                Player player = (Player) sender;
+                player.sendActionBar(message.replace("HOTBAR", ""));
+            }
+            return;
+        }
+        sender.sendMessage(message);
+        timer.put(sender, System.currentTimeMillis());
     }
 
     public String getString(String path) {
-        return config.getString(path);
+        return Utils.color(config.getString(path));
     }
 
     public int getInt(String path) {
         return config.getInt(path);
+    }
+
+    public double getDouble(String path) {
+        return config.self().getDouble(path);
+    }
+
+    public List<String> getStrList(String path) {
+        return config.getStringList(path);
     }
 }

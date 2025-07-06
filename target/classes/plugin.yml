@@ -1,8 +1,8 @@
 name: Hotbed
-version: '1.0.3.1'
+version: '1.0.7.5'
 main: org.satellite.dev.progiple.hotbed.Hotbed
 api-version: '1.20'
-depend: [NBTAPI, LunaSpring, DecentHolograms]
+depend: [NBTAPI, LunaSpring, DecentHolograms, WorldGuard, WildLoaders]
 authors: [ProGiple]
 commands:
   hotbed:

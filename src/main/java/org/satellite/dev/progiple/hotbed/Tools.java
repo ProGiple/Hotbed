@@ -10,11 +10,11 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.permissions.PermissionAttachmentInfo;
-import org.novasparkle.lunaspring.Menus.IMenu;
-import org.novasparkle.lunaspring.Menus.Items.Item;
-import org.novasparkle.lunaspring.Menus.MenuManager;
-import org.novasparkle.lunaspring.Util.Utils;
-import org.novasparkle.lunaspring.Util.managers.NBTManager;
+import org.novasparkle.lunaspring.API.menus.IMenu;
+import org.novasparkle.lunaspring.API.menus.MenuManager;
+import org.novasparkle.lunaspring.API.menus.items.Item;
+import org.novasparkle.lunaspring.API.util.service.managers.ColorManager;
+import org.novasparkle.lunaspring.API.util.service.managers.NBTManager;
 import org.satellite.dev.progiple.hotbed.configs.Config;
 import org.satellite.dev.progiple.hotbed.configs.MobsConfig;
 import org.satellite.dev.progiple.hotbed.configs.SpawnerConfig;
@@ -23,7 +23,6 @@ import org.satellite.dev.progiple.hotbed.spawners.menus.realized.StorageMenu;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @UtilityClass
 public class Tools {
@@ -31,7 +30,7 @@ public class Tools {
         double value = 0.0;
         for (String perm : player.getEffectivePermissions().stream()
                 .map(PermissionAttachmentInfo::getPermission)
-                .filter(p -> p.contains("hotbed.chance.")).collect(Collectors.toList())) {
+                .filter(p -> p.contains("hotbed.chance.")).toList()) {
             String[] splited = perm.split("\\.");
             if (splited.length < 3) continue;
 
@@ -96,8 +95,7 @@ public class Tools {
 
     public void updateStorageMenu(SpawnerConfig spawnerConfig) {
         for (IMenu value : MenuManager.getActiveInventories().values()) {
-            if (value instanceof StorageMenu) {
-                StorageMenu menu = (StorageMenu) value;
+            if (value instanceof StorageMenu menu) {
                 if (!menu.getSpawnerConfig().equals(spawnerConfig)) continue;
 
                 menu.updateLoot();
@@ -113,7 +111,7 @@ public class Tools {
         meta.setDisplayName(Config.getString("settings.spawner_name"));
 
         List<String> lore = new ArrayList<>(Config.getStrList("settings.spawner_lore"));
-        lore.replaceAll(line -> Utils.color(line
+        lore.replaceAll(line -> ColorManager.color(line
                 .replace("%mob_type%", Tools.getMobName(entityType.name()))
                 .replace("%spawner_level%", String.valueOf(spawnerLevel))
                 .replace("%player%", nick)));
@@ -127,7 +125,7 @@ public class Tools {
         return item;
     }
 
-    public boolean isOwner(Player player, SpawnerConfig spawnerConfig) {
-        return spawnerConfig.getString("owner").equals(player.getName());
+    public boolean isNotOwner(Player player, SpawnerConfig spawnerConfig) {
+        return !spawnerConfig.getString("owner").equals(player.getName());
     }
 }

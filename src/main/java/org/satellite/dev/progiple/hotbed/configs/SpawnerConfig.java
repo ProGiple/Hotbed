@@ -7,8 +7,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
-import org.novasparkle.lunaspring.Configuration.Configuration;
-import org.novasparkle.lunaspring.Util.Utils;
+import org.novasparkle.lunaspring.API.configuration.Configuration;
+import org.novasparkle.lunaspring.API.util.service.managers.ColorManager;
+import org.novasparkle.lunaspring.API.util.utilities.Utils;
 import org.satellite.dev.progiple.hotbed.Hotbed;
 import org.satellite.dev.progiple.hotbed.Tools;
 import org.satellite.dev.progiple.hotbed.spawners.SpawnLootRunnable;
@@ -23,7 +24,7 @@ public class SpawnerConfig {
     @Getter private final static Map<Location, SpawnerConfig> spawnerCfgs = new HashMap<>();
 
     public static void load() {
-        File dir = new File(Hotbed.getPlugin().getDataFolder(), "spawners");
+        File dir = new File(Hotbed.getINSTANCE().getDataFolder(), "spawners");
         if (!dir.exists() || !dir.isDirectory()) return;
 
         File[] files = dir.listFiles();
@@ -42,20 +43,18 @@ public class SpawnerConfig {
 
     @Getter private Hologram hologram;
     public SpawnerConfig(Location location, String mobType) {
-        this.config = new Configuration(new File(Hotbed.getPlugin().getDataFolder(),
+        this.config = new Configuration(new File(Hotbed.getINSTANCE().getDataFolder(),
                 String.format("spawners/%s.yml", Tools.getStrLoc(location))));
         this.location = location;
         this.set("exp", 0);
         this.set("level", 1);
         this.set("mob", mobType);
-        this.set("storage.1.0", "AIR;0");
-        this.save();
 
-        this.set("storage.1.0", null);
+        this.config.createSection("storage", "1");
         this.save();
 
         this.runnable = new SpawnLootRunnable(this);
-        this.runnable.start();
+        this.runnable.runTaskAsynchronously(Hotbed.getINSTANCE());
         spawnerCfgs.put(this.location, this);
     }
 
@@ -68,7 +67,7 @@ public class SpawnerConfig {
         this.updateHologram();
 
         this.runnable = new SpawnLootRunnable(this);
-        this.runnable.start();
+        this.runnable.runTaskAsynchronously(Hotbed.getINSTANCE());
         spawnerCfgs.put(this.location, this);
     }
 
@@ -77,6 +76,7 @@ public class SpawnerConfig {
         DHAPI.removeHologram(this.hologram.getName());
         this.hologram = null;
         this.updateHologram();
+        this.runnable.updateTimers();
     }
 
     public void updateHologram() {
@@ -102,7 +102,7 @@ public class SpawnerConfig {
                 Material material = Material.getMaterial(line.replace("Material.",""));
                 if (material != null) DHAPI.addHologramLine(this.hologram, material);
             }
-            else DHAPI.addHologramLine(this.hologram, Utils.color(line
+            else DHAPI.addHologramLine(this.hologram, ColorManager.color(line
                     .replace("%mob_type%", mob_type))
                     .replace("%level%", String.valueOf(level))
                     .replace("%owner%", player == null || player.isEmpty() ? "NONE" : player)
@@ -135,8 +135,11 @@ public class SpawnerConfig {
 
     public void delete() {
         if (!this.config.getFile().delete()) System.out.println("file wasn't deleted");
-        Bukkit.getScheduler().cancelTask(this.runnable.getTaskId());
-        if (this.hologram != null) DHAPI.removeHologram(this.hologram.getName());
         SpawnerConfig.getSpawnerCfgs().remove(this.location);
+
+        this.runnable.cancel();
+        Bukkit.getScheduler().cancelTask(this.runnable.getTaskId());
+
+        if (this.hologram != null) DHAPI.removeHologram(this.hologram.getName());
     }
 }

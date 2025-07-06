@@ -2,64 +2,33 @@ package org.satellite.dev.progiple.hotbed.configs;
 
 import lombok.experimental.UtilityClass;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
-import org.novasparkle.lunaspring.Configuration.IConfig;
-import org.novasparkle.lunaspring.Util.Utils;
+import org.novasparkle.lunaspring.API.configuration.IConfig;
+import org.novasparkle.lunaspring.API.events.CooldownPrevent;
+import org.novasparkle.lunaspring.API.util.service.managers.ColorManager;
 import org.satellite.dev.progiple.hotbed.Hotbed;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @UtilityClass
 public class Config {
     private final IConfig config;
-    private final Map<String, String> messages = new HashMap<>();
+    private final CooldownPrevent<CommandSender> cooldown = new CooldownPrevent<>(400);
     static {
-        config = new IConfig(Hotbed.getPlugin());
-        reload();
+        config = new IConfig(Hotbed.getINSTANCE());
     }
 
     public void reload() {
-        Hotbed.getPlugin().saveDefaultConfig();
-        config.reload(Hotbed.getPlugin());
-
-        messages.clear();
-        for (String id : config.getSection("messages").getKeys(false)) {
-            messages.put(id, getString(String.format("messages.%s", id)));
-        }
+        Hotbed.getINSTANCE().saveDefaultConfig();
+        config.reload(Hotbed.getINSTANCE());
     }
 
-    private final Map<CommandSender, Long> timer = new HashMap<>();
-    @SuppressWarnings("deprecation")
     public void sendMessage(CommandSender sender, String id, String... replacements) {
-        if (timer.containsKey(sender)) {
-            long time = timer.get(sender);
-            if (System.currentTimeMillis() - time < 500) return;
-        }
-
-        String message = messages.get(id);
-        if (message == null || message.isEmpty() || message.startsWith("NONE")) return;
-
-        byte index = 0;
-        for (String replacement : replacements) {
-            message = message.replace("{" + index + "}", replacement);
-            index++;
-        }
-
-        if (message.startsWith("HOTBAR")) {
-            if (sender instanceof Player) {
-                Player player = (Player) sender;
-                player.sendActionBar(message.replace("HOTBAR", ""));
-            }
-            return;
-        }
-        sender.sendMessage(message);
-        timer.put(sender, System.currentTimeMillis());
+        if (cooldown.isCancelled(null, sender)) return;
+        config.sendMessage(sender, id, replacements);
     }
 
     public String getString(String path) {
-        return Utils.color(config.getString(path));
+        return ColorManager.color(config.getString(path));
     }
 
     public int getInt(String path) {

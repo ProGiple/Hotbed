@@ -2,7 +2,7 @@ package org.satellite.dev.progiple.hotbed.configs;
 
 import lombok.experimental.UtilityClass;
 import org.bukkit.configuration.ConfigurationSection;
-import org.novasparkle.lunaspring.Configuration.Configuration;
+import org.novasparkle.lunaspring.API.configuration.Configuration;
 import org.satellite.dev.progiple.hotbed.Hotbed;
 
 import java.io.File;
@@ -11,7 +11,7 @@ import java.io.File;
 public class MobsConfig {
     public final Configuration config;
     static {
-        config = new Configuration(new File(Hotbed.getPlugin().getDataFolder(), "mobs.yml"));
+        config = new Configuration(new File(Hotbed.getINSTANCE().getDataFolder(), "mobs.yml"));
     }
 
     public void reload() {

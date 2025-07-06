@@ -11,14 +11,16 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import org.novasparkle.lunaspring.Menus.MenuManager;
-import org.novasparkle.lunaspring.Util.managers.NBTManager;
+import org.novasparkle.lunaspring.API.commands.annotations.LunaHandler;
+import org.novasparkle.lunaspring.API.menus.MenuManager;
+import org.novasparkle.lunaspring.API.util.service.managers.NBTManager;
 import org.satellite.dev.progiple.hotbed.Tools;
 import org.satellite.dev.progiple.hotbed.configs.Config;
 import org.satellite.dev.progiple.hotbed.configs.MobsConfig;
 import org.satellite.dev.progiple.hotbed.configs.SpawnerConfig;
 import org.satellite.dev.progiple.hotbed.spawners.menus.realized.MainMenu;
 
+@LunaHandler
 public class ClickOnSpawnerHandler implements Listener {
     @EventHandler
     public void onClickOnBlock(PlayerInteractEvent e) {
@@ -37,7 +39,7 @@ public class ClickOnSpawnerHandler implements Listener {
             return;
         }
 
-        if (!Tools.isOwner(player, spawnerConfig)) {
+        if (Tools.isNotOwner(player, spawnerConfig)) {
             Config.sendMessage(player, "youNotOwner");
             return;
         }

@@ -2,8 +2,8 @@ package org.satellite.dev.progiple.hotbed.configs.menuCfg;
 
 import lombok.Getter;
 import org.bukkit.configuration.ConfigurationSection;
-import org.novasparkle.lunaspring.Configuration.Configuration;
-import org.novasparkle.lunaspring.Util.Utils;
+import org.novasparkle.lunaspring.API.configuration.Configuration;
+import org.novasparkle.lunaspring.API.util.service.managers.ColorManager;
 import org.satellite.dev.progiple.hotbed.Hotbed;
 
 import java.io.File;
@@ -18,11 +18,11 @@ public class MenuConfig extends Configuration {
     }
 
     public MenuConfig(String fileName) {
-        super(new File(Hotbed.getPlugin().getDataFolder(), String.format("menus/%s.yml", fileName)));
+        super(new File(Hotbed.getINSTANCE().getDataFolder(), String.format("menus/%s.yml", fileName)));
     }
 
     public String getTitle() {
-        return Utils.color(Objects.requireNonNull(super.getString("title")));
+        return ColorManager.color(Objects.requireNonNull(super.getString("title")));
     }
 
     public byte getSize() {

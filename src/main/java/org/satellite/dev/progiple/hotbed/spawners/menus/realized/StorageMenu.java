@@ -4,12 +4,11 @@ import lombok.Getter;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.ItemStack;
-import org.novasparkle.lunaspring.Menus.MenuManager;
-import org.novasparkle.lunaspring.Util.Utils;
+import org.novasparkle.lunaspring.API.menus.MenuManager;
+import org.novasparkle.lunaspring.API.menus.items.Item;
+import org.novasparkle.lunaspring.API.util.utilities.LunaMath;
 import org.satellite.dev.progiple.hotbed.configs.Config;
 import org.satellite.dev.progiple.hotbed.configs.SpawnerConfig;
 import org.satellite.dev.progiple.hotbed.configs.menuCfg.MenuConfig;
@@ -31,63 +30,84 @@ public class StorageMenu extends HMenu {
         ConfigurationSection itemsSection = this.getMenuConfig().getSection("items.clickable");
         for (String key : itemsSection.getKeys(false)) {
             ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
-            Button button = new Button(itemSection, spawnerConfig) {
-                @Override
-                public void click(Player player) {
-                    switch (key) {
-                        case "NEXT_PAGE" -> {
-                            ConfigurationSection storageSection = storage.getConfigurationSection(String.valueOf(page + 1));
-                            if (storageSection != null) {
-                                MenuManager.openInventory(player, new StorageMenu(player, spawnerConfig, page + 1));
-                            }
-                            else Config.sendMessage(player, "noPages");
+            Button button = null;
+
+            switch (key) {
+                case "NEXT_PAGE" -> button = new Button(itemSection, this.getSpawnerConfig()) {
+                    @Override
+                    public Item onClick(InventoryClickEvent e) {
+                        ConfigurationSection storageSection = storage.getConfigurationSection(String.valueOf(page + 1));
+                        if (storageSection != null) {
+                            MenuManager.openInventory(player, new StorageMenu(player, spawnerConfig, page + 1));
                         }
-                        case "BACK_PAGE" -> {
-                            if (page > 1) MenuManager.openInventory(player,
-                                        new StorageMenu(player, spawnerConfig, page - 1));
-                            else Config.sendMessage(player, "noPages");
-                        }
-                        case "COLLECT_ALL" -> {
-                            Map<LootItem, Integer> map = new HashMap<>();
-                            storage.getKeys(false).forEach(key -> {
-                                ConfigurationSection pageSection = storage.getConfigurationSection(key);
-                                if (pageSection != null && !pageSection.getKeys(false).isEmpty()) {
-                                    int page = Utils.toInt(key);
-                                    for (String pageSectionKey : pageSection.getKeys(false)) {
-                                        String[] split =
-                                                Objects.requireNonNull(pageSection.getString(pageSectionKey)).split(";");
-                                        int amount = split.length >= 2 ? Utils.toInt(split[1]) : 1;
-                                        Material material = Material.getMaterial(split[0]);
-
-                                        if (material == null) continue;
-                                        LootItem lootItem = new LootItem(material, amount);
-                                        lootItem.setSlot((byte) Utils.toInt(pageSectionKey));
-
-                                        map.put(lootItem, page);
-                                    }
-                                }
-                            });
-
-                            if (map.isEmpty()) {
-                                Config.sendMessage(player, "noItems");
-                                return;
-                            }
-
-                            map.forEach((item, page) -> {
-                                item.collect(player);
-                                this.getSpawnerConfig().set(String.format("storage.%s.%s", page, item.getSlot()), null);
-                            });
-                            getSpawnerConfig().save();
-                            getSpawnerConfig().updateHologram();
-                            Config.sendMessage(player, "collectAllItems");
-                            player.closeInventory();
-                        }
-                        case "CLOSE" -> player.closeInventory();
-                        case "BACK" -> MenuManager.openInventory(player, new MainMenu(player, spawnerConfig));
+                        else Config.sendMessage(player, "noPages");
+                        return this;
                     }
-                }
-            };
-            this.getButtons().add(button);
+                };
+                case "BACK_PAGE" -> button = new Button(itemSection, this.getSpawnerConfig()) {
+                    @Override
+                    public Item onClick(InventoryClickEvent e) {
+                        if (page > 1) MenuManager.openInventory(player,
+                                new StorageMenu(player, spawnerConfig, page - 1));
+                        else Config.sendMessage(player, "noPages");
+                        return this;
+                    }
+                };
+                case "COLLECT_ALL" -> button = new Button(itemSection, this.getSpawnerConfig()) {
+                    @Override
+                    public Item onClick(InventoryClickEvent e) {
+                        Map<LootItem, Integer> map = new HashMap<>();
+                        storage.getKeys(false).forEach(key -> {
+                            ConfigurationSection pageSection = storage.getConfigurationSection(key);
+                            if (pageSection != null && !pageSection.getKeys(false).isEmpty()) {
+                                int page = LunaMath.toInt(key);
+                                for (String pageSectionKey : pageSection.getKeys(false)) {
+                                    String[] split =
+                                            Objects.requireNonNull(pageSection.getString(pageSectionKey)).split(";");
+                                    int amount = split.length >= 2 ? LunaMath.toInt(split[1]) : 1;
+                                    Material material = Material.getMaterial(split[0]);
+
+                                    if (material == null) continue;
+                                    LootItem lootItem = new LootItem(material, amount);
+                                    lootItem.setSlot((byte) LunaMath.toInt(pageSectionKey));
+
+                                    map.put(lootItem, page);
+                                }
+                            }
+                        });
+
+                        if (map.isEmpty()) {
+                            Config.sendMessage(player, "noItems");
+                            return this;
+                        }
+
+                        map.forEach((item, page) -> {
+                            item.collect(player);
+                            this.getSpawnerConfig().set(String.format("storage.%s.%s", page, item.getSlot()), null);
+                        });
+                        getSpawnerConfig().save();
+                        getSpawnerConfig().updateHologram();
+                        Config.sendMessage(player, "collectAllItems");
+                        player.closeInventory();
+                        return this;
+                    }
+                };
+                case "CLOSE" -> button = new Button(itemSection, this.getSpawnerConfig()) {
+                    @Override
+                    public Item onClick(InventoryClickEvent e) {
+                        player.closeInventory();
+                        return this;
+                    }
+                };
+                case "BACK" -> button = new Button(itemSection, this.getSpawnerConfig()) {
+                    @Override
+                    public Item onClick(InventoryClickEvent e) {
+                        MenuManager.openInventory(player, new MainMenu(player, spawnerConfig));
+                        return this;
+                    }
+                };
+            }
+            if (button != null) this.getButtons().add(button);
         }
         this.updateLoot();
     }
@@ -99,19 +119,21 @@ public class StorageMenu extends HMenu {
 
     @Override
     public void onClick(InventoryClickEvent e) {
+        if (this.cancelNums(e)) return;
+
         ItemStack item = e.getCurrentItem();
         if (item == null || item.getType() == Material.AIR) return;
 
         e.setCancelled(true);
         for (Button button : this.getButtons()) {
-            if (button.checkId(item)) {
-                button.click(this.getPlayer());
+            if (button.getItemStack().equals(item) && button.getSlot() == e.getSlot()) {
+                button.onClick(e);
                 return;
             }
         }
 
         for (LootItem lootItem : new ArrayList<>(this.loot)) {
-            if (lootItem.checkId(item)) {
+            if (lootItem.getSlot() == e.getSlot() && lootItem.getItemStack().equals(item)) {
                 lootItem.collect(this.getPlayer());
                 this.removeLootItem(lootItem);
                 this.getSpawnerConfig().save();
@@ -146,7 +168,7 @@ public class StorageMenu extends HMenu {
             int amount = split.length >= 2 ? Integer.parseInt(split[1]) : 1;
             amount = Math.min(Math.max(amount, 1), 64);
 
-            Material material = Material.getMaterial(split[0]);
+            Material material = Material.getMaterial(split[0].toUpperCase());
             if (material == null) continue;
 
             LootItem lootItem = new LootItem(material, amount);
@@ -157,5 +179,10 @@ public class StorageMenu extends HMenu {
 
     @Override
     public void onClose(InventoryCloseEvent e) {
+    }
+
+    @Override
+    public void onDrag(InventoryDragEvent e) {
+        e.setCancelled(true);
     }
 }

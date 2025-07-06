@@ -6,7 +6,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.novasparkle.lunaspring.API.commands.annotations.LunaHandler;
 
+@LunaHandler
 public class DestroySpawnerHandler implements Listener {
     @EventHandler
     public void onEntityExplode(EntityExplodeEvent event) {

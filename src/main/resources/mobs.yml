@@ -9,5 +9,5 @@ mobs:
     displayName: "Ифрит"
     exp: 2-5
     lootlist:
-      - BLAZE_ROD;1
+      - BLAZE_ROD;1;15%
       - BLAZE_POWDER;1-2

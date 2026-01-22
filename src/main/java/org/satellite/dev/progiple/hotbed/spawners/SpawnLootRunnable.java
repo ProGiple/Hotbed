@@ -12,6 +12,7 @@ import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.novasparkle.lunaspring.API.util.utilities.LunaMath;
 import org.novasparkle.lunaspring.API.util.utilities.LunaTask;
+import org.satellite.dev.progiple.hotbed.Hotbed;
 import org.satellite.dev.progiple.hotbed.Tools;
 import org.satellite.dev.progiple.hotbed.configs.Config;
 import org.satellite.dev.progiple.hotbed.configs.MobsConfig;
@@ -21,6 +22,8 @@ import org.satellite.dev.progiple.hotbed.configs.menuCfg.MenuConfig;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 @Getter
 public class SpawnLootRunnable extends LunaTask {
@@ -51,27 +54,21 @@ public class SpawnLootRunnable extends LunaTask {
     public void start() {
         while (this.isActive()) {
             Thread.sleep(1000);
-            this.generateLoot();
+            this.process();
         }
     }
 
-    private void generateLoot() {
-        int level = this.spawnerConfig.getInt("level");
-        int timer = Math.max(this.spawnLootTimer - (this.k * level), this.minLootTimer);
-        if (this.left_seconds < timer) {
-            this.left_seconds++;
-            return;
-        } else this.left_seconds = 0;
-
+    private boolean distanceIsValid() {
         Location loc = this.spawnerConfig.getLocation();
         if (loc.getBlock().getType() != Material.SPAWNER) {
             this.spawnerConfig.delete();
-            return;
+            return false;
         }
 
-        if (this.mobSection == null || !this.chunkIsLoaded(loc)) return;
+        return this.mobSection != null && this.chunkIsLoaded(loc);
+    }
 
-        // 100
+    private void generateLoot(int level) {
         int storageSize = Tools.getStorageSize(this.spawnerConfig);
         int amountLimit = Config.getInt("settings.maxLootItemsLimitPerLevel") * level;
         int expLimit = Config.getInt("settings.maxExpLimitPerLevel") * level;
@@ -81,11 +78,11 @@ public class SpawnLootRunnable extends LunaTask {
         if (storageSize >= amountLimit || exp >= expLimit) return;
         ConfigurationSection storageSection = this.spawnerConfig.getStorageSection();
 
-        List<Integer> keys = new ArrayList<>(storageSection.getKeys(false)
+        List<Integer> keys = storageSection.getKeys(false)
                 .stream()
                 .map(LunaMath::toInt)
                 .sorted()
-                .toList());
+                .collect(Collectors.toList());
         for (String loot : this.mobSection.getStringList("lootlist")) {
             String[] settings = loot.split(";");
             String material = settings[0].toUpperCase();
@@ -101,7 +98,7 @@ public class SpawnLootRunnable extends LunaTask {
 
                 int min = LunaMath.toInt(splitAmount[0]) * level;
                 int max = splitAmount.length >= 2 ? LunaMath.toInt(splitAmount[1]) * level : 0;
-                amount = max > 0 ? LunaMath.getRandom().nextInt(max - min) + max : min;
+                amount = max > 0 ? ThreadLocalRandom.current().nextInt(max - min) + max : min;
             }
 
             if (amount <= 0) continue;
@@ -158,9 +155,25 @@ public class SpawnLootRunnable extends LunaTask {
         this.updateSpawner(exp, level, expLimit);
     }
 
+    private void process() {
+        int level = this.spawnerConfig.getInt("level");
+        int timer = Math.max(this.spawnLootTimer - (this.k * level), this.minLootTimer);
+        if (this.left_seconds < timer) {
+            this.left_seconds++;
+            return;
+        } else this.left_seconds = 0;
+
+        Bukkit.getScheduler().runTask(Hotbed.getINSTANCE(), () -> {
+            if (distanceIsValid())
+                Bukkit.getScheduler().runTaskAsynchronously(Hotbed.getINSTANCE(), () -> {
+                    this.generateLoot(level);
+                });
+        });
+    }
+
     private void updateSpawner(int exp, int level, int expLimit) {
         String[] split = Objects.requireNonNull(this.mobSection.getString("exp")).split("-");
-        int generatedExp = split.length >= 2 ? LunaMath.getRandom().nextInt(Integer.parseInt(split[1])
+        int generatedExp = split.length >= 2 ? ThreadLocalRandom.current().nextInt(Integer.parseInt(split[1])
                 - Integer.parseInt(split[0])) + Integer.parseInt(split[0]) : Integer.parseInt(split[0]);
         this.spawnerConfig.set("exp", Math.min(exp + generatedExp * level, expLimit));
         this.spawnerConfig.save();

@@ -3,6 +3,7 @@ package org.satellite.dev.progiple.hotbed.configs;
 import eu.decentsoftware.holograms.api.DHAPI;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
 import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -41,6 +42,7 @@ public class SpawnerConfig {
     @Getter private final Location location;
     @Getter private final SpawnLootRunnable runnable;
 
+    @Setter
     @Getter private Hologram hologram;
     public SpawnerConfig(Location location, String mobType) {
         this.config = new Configuration(new File(Hotbed.getINSTANCE().getDataFolder(),
@@ -49,6 +51,7 @@ public class SpawnerConfig {
         this.set("exp", 0);
         this.set("level", 1);
         this.set("mob", mobType);
+        this.set("holo", true);
 
         this.config.createSection("storage", "1");
         this.save();
@@ -73,13 +76,18 @@ public class SpawnerConfig {
 
     public void reload() {
         this.config.reload();
-        DHAPI.removeHologram(this.hologram.getName());
-        this.hologram = null;
+        if (this.hologram != null) {
+            DHAPI.removeHologram(this.hologram.getName());
+            this.hologram = null;
+        }
+
         this.updateHologram();
         this.runnable.updateTimers();
     }
 
     public void updateHologram() {
+        if (!this.getHologramStatus()) return;
+
         int level = this.getInt("level");
         int maxExp = Config.getInt("settings.maxExpLimitPerLevel") * level;
         int maxItems = Config.getInt("settings.maxLootItemsLimitPerLevel") * level;
@@ -123,6 +131,10 @@ public class SpawnerConfig {
 
     public ConfigurationSection getStorageSection() {
         return this.config.getSection("storage");
+    }
+
+    public boolean getHologramStatus() {
+        return this.config.getBoolean("holo");
     }
 
     public void set(String path, Object o) {

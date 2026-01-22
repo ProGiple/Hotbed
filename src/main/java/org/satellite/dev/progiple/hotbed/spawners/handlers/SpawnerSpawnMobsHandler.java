@@ -5,7 +5,7 @@ import org.bukkit.block.CreatureSpawner;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.SpawnerSpawnEvent;
-import org.novasparkle.lunaspring.API.commands.annotations.LunaHandler;
+import org.novasparkle.lunaspring.API.events.LunaHandler;
 import org.satellite.dev.progiple.hotbed.configs.SpawnerConfig;
 
 @LunaHandler

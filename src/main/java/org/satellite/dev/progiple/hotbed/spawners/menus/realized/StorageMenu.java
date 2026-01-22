@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.ItemStack;
 import org.novasparkle.lunaspring.API.menus.MenuManager;
+import org.novasparkle.lunaspring.API.menus.MoveIgnored;
 import org.novasparkle.lunaspring.API.menus.items.Item;
 import org.novasparkle.lunaspring.API.util.utilities.LunaMath;
 import org.satellite.dev.progiple.hotbed.configs.Config;
@@ -15,10 +16,13 @@ import org.satellite.dev.progiple.hotbed.configs.menuCfg.MenuConfig;
 import org.satellite.dev.progiple.hotbed.spawners.menus.HMenu;
 import org.satellite.dev.progiple.hotbed.spawners.menus.LootItem;
 import org.satellite.dev.progiple.hotbed.spawners.menus.buttons.Button;
+import org.satellite.dev.progiple.hotbed.spawners.menus.buttons.realized.CloseButton;
+import org.satellite.dev.progiple.hotbed.spawners.menus.buttons.realized.CollectAllButton;
+import org.satellite.dev.progiple.hotbed.spawners.menus.buttons.realized.SwitchHologramButton;
 
 import java.util.*;
 
-@Getter
+@Getter @MoveIgnored
 public class StorageMenu extends HMenu {
     private final int page;
     private final List<LootItem> loot = new ArrayList<>();
@@ -38,7 +42,7 @@ public class StorageMenu extends HMenu {
                     public Item onClick(InventoryClickEvent e) {
                         ConfigurationSection storageSection = storage.getConfigurationSection(String.valueOf(page + 1));
                         if (storageSection != null) {
-                            MenuManager.openInventory(player, new StorageMenu(player, spawnerConfig, page + 1));
+                            MenuManager.openInventory(new StorageMenu(player, spawnerConfig, page + 1));
                         }
                         else Config.sendMessage(player, "noPages");
                         return this;
@@ -47,62 +51,18 @@ public class StorageMenu extends HMenu {
                 case "BACK_PAGE" -> button = new Button(itemSection, this.getSpawnerConfig()) {
                     @Override
                     public Item onClick(InventoryClickEvent e) {
-                        if (page > 1) MenuManager.openInventory(player,
-                                new StorageMenu(player, spawnerConfig, page - 1));
+                        if (page > 1) MenuManager.openInventory(new StorageMenu(player, spawnerConfig, page - 1));
                         else Config.sendMessage(player, "noPages");
                         return this;
                     }
                 };
-                case "COLLECT_ALL" -> button = new Button(itemSection, this.getSpawnerConfig()) {
-                    @Override
-                    public Item onClick(InventoryClickEvent e) {
-                        Map<LootItem, Integer> map = new HashMap<>();
-                        storage.getKeys(false).forEach(key -> {
-                            ConfigurationSection pageSection = storage.getConfigurationSection(key);
-                            if (pageSection != null && !pageSection.getKeys(false).isEmpty()) {
-                                int page = LunaMath.toInt(key);
-                                for (String pageSectionKey : pageSection.getKeys(false)) {
-                                    String[] split =
-                                            Objects.requireNonNull(pageSection.getString(pageSectionKey)).split(";");
-                                    int amount = split.length >= 2 ? LunaMath.toInt(split[1]) : 1;
-                                    Material material = Material.getMaterial(split[0]);
-
-                                    if (material == null) continue;
-                                    LootItem lootItem = new LootItem(material, amount);
-                                    lootItem.setSlot((byte) LunaMath.toInt(pageSectionKey));
-
-                                    map.put(lootItem, page);
-                                }
-                            }
-                        });
-
-                        if (map.isEmpty()) {
-                            Config.sendMessage(player, "noItems");
-                            return this;
-                        }
-
-                        map.forEach((item, page) -> {
-                            item.collect(player);
-                            this.getSpawnerConfig().set(String.format("storage.%s.%s", page, item.getSlot()), null);
-                        });
-                        getSpawnerConfig().save();
-                        getSpawnerConfig().updateHologram();
-                        Config.sendMessage(player, "collectAllItems");
-                        player.closeInventory();
-                        return this;
-                    }
-                };
-                case "CLOSE" -> button = new Button(itemSection, this.getSpawnerConfig()) {
-                    @Override
-                    public Item onClick(InventoryClickEvent e) {
-                        player.closeInventory();
-                        return this;
-                    }
-                };
+                case "COLLECT_ALL" -> button = new CollectAllButton(itemSection, spawnerConfig, storage);
+                case "CLOSE" -> button = new CloseButton(itemSection, spawnerConfig);
+                case "SWITCH_HOLOGRAM" -> button = new SwitchHologramButton(itemSection, spawnerConfig);
                 case "BACK" -> button = new Button(itemSection, this.getSpawnerConfig()) {
                     @Override
                     public Item onClick(InventoryClickEvent e) {
-                        MenuManager.openInventory(player, new MainMenu(player, spawnerConfig));
+                        MenuManager.openInventory(new MainMenu(player, spawnerConfig));
                         return this;
                     }
                 };
@@ -119,19 +79,9 @@ public class StorageMenu extends HMenu {
 
     @Override
     public void onClick(InventoryClickEvent e) {
-        if (this.cancelNums(e)) return;
+        if (super.processClick(e)) return;
 
         ItemStack item = e.getCurrentItem();
-        if (item == null || item.getType() == Material.AIR) return;
-
-        e.setCancelled(true);
-        for (Button button : this.getButtons()) {
-            if (button.getItemStack().equals(item) && button.getSlot() == e.getSlot()) {
-                button.onClick(e);
-                return;
-            }
-        }
-
         for (LootItem lootItem : new ArrayList<>(this.loot)) {
             if (lootItem.getSlot() == e.getSlot() && lootItem.getItemStack().equals(item)) {
                 lootItem.collect(this.getPlayer());

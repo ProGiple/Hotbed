@@ -11,7 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import org.novasparkle.lunaspring.API.commands.annotations.LunaHandler;
+import org.novasparkle.lunaspring.API.events.LunaHandler;
 import org.novasparkle.lunaspring.API.menus.MenuManager;
 import org.novasparkle.lunaspring.API.util.service.managers.NBTManager;
 import org.satellite.dev.progiple.hotbed.Tools;
@@ -79,6 +79,6 @@ public class ClickOnSpawnerHandler implements Listener {
             return;
         }
 
-        MenuManager.openInventory(player, new MainMenu(player, spawnerConfig));
+        MenuManager.openInventory(new MainMenu(player, spawnerConfig));
     }
 }

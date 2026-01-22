@@ -94,14 +94,9 @@ public class Tools {
     }
 
     public void updateStorageMenu(SpawnerConfig spawnerConfig) {
-        for (IMenu value : MenuManager.getActiveInventories().values()) {
-            if (value instanceof StorageMenu menu) {
-                if (!menu.getSpawnerConfig().equals(spawnerConfig)) continue;
-
-                menu.updateLoot();
-                break;
-            }
-        }
+        MenuManager.getActiveMenus(StorageMenu.class, true)
+                .filter(m -> m.getSpawnerConfig().equals(spawnerConfig))
+                .findFirst().ifPresent(StorageMenu::updateLoot);
     }
 
     @SuppressWarnings("deprecation")
@@ -116,8 +111,7 @@ public class Tools {
                 .replace("%spawner_level%", String.valueOf(spawnerLevel))
                 .replace("%player%", nick)));
         meta.setLore(lore);
-        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES,
-                ItemFlag.HIDE_ITEM_SPECIFICS, ItemFlag.HIDE_ARMOR_TRIM);
+        meta.addItemFlags(ItemFlag.values());
         item.setItemMeta(meta);
 
         NBTManager.setString(item, "mob", entityType.name());

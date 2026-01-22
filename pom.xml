@@ -6,7 +6,7 @@
 
   <groupId>org.satellite.dev.progiple</groupId>
   <artifactId>Hotbed</artifactId>
-  <version>1.0.7.5</version>
+  <version>1.0.14</version>
   <packaging>jar</packaging>
 
   <name>Hotbed</name>
@@ -87,7 +87,7 @@
       <dependency>
           <groupId>com.github.NovaSparkle</groupId>
           <artifactId>LunaSpring</artifactId>
-          <version>3.4.7.1</version>
+          <version>3.9.1f</version>
           <scope>provided</scope>
       </dependency>
       <dependency>

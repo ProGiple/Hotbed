@@ -15,6 +15,17 @@ items:
       slots:
         - 1
   clickable:
+    SWITCH_HOLOGRAM:
+      material: BARREL
+      displayName: "&bПереключить голограмму"
+      lore:
+        - " "
+        - "Текущее состояние: %status%"
+        - " "
+      statuses:
+        ENABLE: "&aВключено"
+        DISABLE: "&cВыключено"
+      slot: 0
     STORAGE:
       material: BARREL
       displayName: "&bХранилище"

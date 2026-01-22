@@ -1,9 +1,11 @@
 package org.satellite.dev.progiple.hotbed.spawners.menus;
 
 import lombok.Getter;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.ItemStack;
 import org.novasparkle.lunaspring.API.menus.AMenu;
 import org.novasparkle.lunaspring.API.menus.items.Decoration;
 import org.satellite.dev.progiple.hotbed.Tools;
@@ -26,14 +28,27 @@ public abstract class HMenu extends AMenu {
 
         Decoration decoration = new Decoration(menuConfig.getSection("items.decorations"), this.getInventory());
         decoration.getDecorationItems().forEach(item -> item.setLore(Tools.reLoreItem(item, spawnerConfig)));
-        decoration.insert();
+        decoration.insert(this.getInventory());
+        this.setDecoration(decoration);
     }
 
-    public boolean cancelNums(InventoryClickEvent e) {
+    public boolean processClick(InventoryClickEvent e) {
         if (e.getClick() == ClickType.NUMBER_KEY) {
             e.setCancelled(true);
-            return true;
+            return false;
         }
-        return false;
+
+        ItemStack item = e.getCurrentItem();
+        if (item == null || item.getType() == Material.AIR) return false;
+
+        e.setCancelled(true);
+        for (Button button : this.getButtons()) {
+            if (button.getItemStack().equals(item) && button.getSlot() == e.getSlot()) {
+                button.onClick(e);
+                return false;
+            }
+        }
+
+        return true;
     }
 }

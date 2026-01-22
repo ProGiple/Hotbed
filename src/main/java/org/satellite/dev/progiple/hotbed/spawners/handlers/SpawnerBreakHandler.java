@@ -18,8 +18,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.novasparkle.lunaspring.API.commands.annotations.LunaHandler;
-import org.novasparkle.lunaspring.API.menus.IMenu;
+import org.novasparkle.lunaspring.API.events.LunaHandler;
 import org.novasparkle.lunaspring.API.menus.MenuManager;
 import org.satellite.dev.progiple.hotbed.Tools;
 import org.satellite.dev.progiple.hotbed.configs.Config;
@@ -34,7 +33,9 @@ public class SpawnerBreakHandler implements Listener {
         Player player = e.getPlayer();
 
         BlockState state = block.getState();
-        if (block.getType() != Material.SPAWNER || !(state instanceof CreatureSpawner)) return;
+        if (block.getType() != Material.SPAWNER) return;
+
+        CreatureSpawner creatureSpawner = (CreatureSpawner) state;
 
         Location weLocation = new Location(BukkitAdapter.adapt(block.getWorld()), block.getX(), block.getY(), block.getZ());
         org.bukkit.Location location = block.getLocation();
@@ -44,7 +45,6 @@ public class SpawnerBreakHandler implements Listener {
         RegionQuery query = container.createQuery();
 
         if (query.testBuild(weLocation, localPlayer, Flags.BUILD) || query.testBuild(weLocation, localPlayer, Flags.BLOCK_BREAK)) {
-            CreatureSpawner creatureSpawner = (CreatureSpawner) state;
             EntityType entityType = creatureSpawner.getSpawnedType();
             if (entityType == null) entityType = EntityType.ZOMBIE;
 
@@ -63,15 +63,10 @@ public class SpawnerBreakHandler implements Listener {
                 }
 
                 e.setExpToDrop(spawnerConfig.getInt("exp"));
-            }
 
-            for (IMenu value : MenuManager.getActiveInventories().values()) {
-                if (value instanceof HMenu hMenu) {
-                    if (hMenu.getSpawnerConfig().getLocation().equals(location)) {
-                        hMenu.getPlayer().closeInventory(InventoryCloseEvent.Reason.PLUGIN);
-                        break;
-                    }
-                }
+                MenuManager.getActiveMenus(HMenu.class, false)
+                        .filter(m -> m.getSpawnerConfig().equals(spawnerConfig))
+                        .forEach(m -> m.getPlayer().closeInventory(InventoryCloseEvent.Reason.PLUGIN));
             }
 
             if (spawnerConfig != null || Tools.getPlayerChance(player) / 100 >= Math.random()) {
@@ -82,7 +77,12 @@ public class SpawnerBreakHandler implements Listener {
 
                 Config.sendMessage(player, "spawnerReceived");
             }
-            else Config.sendMessage(player, "spawnerBroken");
+            else
+                Config.sendMessage(player, "spawnerBroken");
+        }
+        else {
+            Config.sendMessage(player, "breakInRegion");
+            e.setCancelled(true);
         }
     }
 }
